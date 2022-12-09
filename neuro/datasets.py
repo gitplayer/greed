@@ -21,8 +21,12 @@ import random
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
-def k_hop_nbr_nx(nx_g, src, n_hops):
-    return tg.utils.from_networkx(nx.convert_node_labels_to_integers(nx.ego_graph(nx_g, src, n_hops)))
+def k_hop_nbr_nx(nx_g, src, n_hops, is_convert_node_labels_to_integers=True):
+    ego_graph = nx.ego_graph(nx_g, src, n_hops)
+    if is_convert_node_labels_to_integers:
+        ego_graph = nx.convert_node_labels_to_integers(ego_graph)
+        return tg.utils.from_networkx(ego_graph)
+    return ego_graph
 
 def random_bfs_sample(g, n_hops, trav_prob, node_mask=None, edge_mask=None):
     if node_mask is None or torch.sum(node_mask) == 0:
@@ -55,26 +59,26 @@ def random_bfs_sample(g, n_hops, trav_prob, node_mask=None, edge_mask=None):
 nx_g, n_hops = None, None
 def k_hop_nbr_init(*args):
     global nx_g, n_hops
-    graph, n_hops = args
-    nx_g = tg.utils.to_networkx(graph, node_attrs=['x'], to_undirected=True, remove_self_loops=False)
+    graph, n_hops, take_only_directed_edges = args
+    nx_g = tg.utils.to_networkx(graph, node_attrs=['x'], to_undirected=take_only_directed_edges, remove_self_loops=False)
     
 def k_hop_nbr_func(args):
-    src = args
-    return src, k_hop_nbr_nx(nx_g, src, n_hops)
+    src, is_convert_node_labels_to_integers = args
+    return src, k_hop_nbr_nx(nx_g, src, n_hops, is_convert_node_labels_to_integers=is_convert_node_labels_to_integers)
 
-def decompose(graphs, n_hops):
+def decompose(graphs, n_hops, take_only_directed_edges=True, is_convert_node_labels_to_integers=True):
     tqdm.write('decompose into neighborhoods')
     ret = []
     for graph in tqdm(graphs, desc='graphs'):
         r = [None] * graph.num_nodes
         tqdm.write(f'n_workers: {config.n_workers}')
         if config.n_workers == 1:
-            k_hop_nbr_init(graph, n_hops)
-            for src, nbr in tqdm(map(k_hop_nbr_func, range(graph.num_nodes)), desc='nbrs', total=graph.num_nodes):
+            k_hop_nbr_init(graph, n_hops, take_only_directed_edges)
+            for src, nbr in tqdm(map(k_hop_nbr_func, [(i ,is_convert_node_labels_to_integers) for i in range(graph.num_nodes)]), desc='nbrs', total=graph.num_nodes):
                 r[src] = nbr
         else:
-            with mp.Pool(config.n_workers, k_hop_nbr_init, (graph, n_hops)) as p:
-                for src, nbr in tqdm(p.imap_unordered(k_hop_nbr_func, range(graph.num_nodes)), desc='nbrs', total=graph.num_nodes):
+            with mp.Pool(config.n_workers, k_hop_nbr_init, (graph, n_hops, take_only_directed_edges)) as p:
+                for src, nbr in tqdm(p.imap_unordered(k_hop_nbr_func, [(i ,is_convert_node_labels_to_integers) for i in range(graph.num_nodes)]), desc='nbrs', total=graph.num_nodes):
                     r[src] = nbr
         ret += r
     return ret
