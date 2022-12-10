@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(0, '../pyged/lib')
-import pyged
+# import pyged
 from . import config, utils, viz
 
 import numpy as np

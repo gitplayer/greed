@@ -9,7 +9,7 @@ from . import config, utils
 import sys
 sys.path.insert(0, '../..')
 sys.path.insert(0, '../../pyged/lib')
-import pyged
+# import pyged
 
 def err(lb, ub, pred):
     lb, ub, pred = (x.to(config.device) for x in (lb, ub, pred))
