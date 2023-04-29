@@ -25,7 +25,7 @@ class EmbedModel(torch.nn.Module):
                 ))
         elif conv == 'gcn':
             make_conv = lambda:\
-                tg.nn.GCNConv(self.hidden_dim, self.hidden_dim)
+                tg.nn.GCNConv(self.hidden_dim, self.hidden_dim, normalize=False)
         elif conv == 'sage':
             make_conv = lambda:\
                 tg.nn.SAGEConv(self.hidden_dim, self.hidden_dim)
@@ -71,7 +71,7 @@ class EmbedModel(torch.nn.Module):
         emb = x
         xres = x
         for i in range(self.n_layers):
-            x = self.convs[i](x, edge_index)
+            x = self.convs[i](x, edge_index, g.edge_attr)
             if i&1:
                 x += xres
                 xres = x
