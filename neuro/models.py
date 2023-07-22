@@ -13,7 +13,8 @@ class EmbedModel(torch.nn.Module):
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         self.output_dim = output_dim
-        
+        self.conv = conv
+
         self.pre = torch.nn.Linear(self.input_dim, self.hidden_dim)
         
         if conv == 'gin':
@@ -71,7 +72,10 @@ class EmbedModel(torch.nn.Module):
         emb = x
         xres = x
         for i in range(self.n_layers):
-            x = self.convs[i](x, edge_index, g.edge_attr)
+            if self.conv == 'gcn':
+                x = self.convs[i](x, edge_index, g.edge_attr)
+            else:
+                x = self.convs[i](x, edge_index)
             if i&1:
                 x += xres
                 xres = x
