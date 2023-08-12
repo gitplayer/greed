@@ -1,2 +1,3 @@
 .ipynb_checkpoints
 __pycache__
+/NeuroSED_models_data/*
