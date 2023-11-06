@@ -66,7 +66,11 @@ class EmbedModel(torch.nn.Module):
         
     def forward(self, g):
         x = g.x
-        edge_index = g.edge_index
+        orig_edge_index = g.edge_index
+        # edge_index2 = SparseTensor.from_edge_index(orig_edge_index)
+        # edge_index = SparseTensor.from_edge_index(orig_edge_index, edge_attr=g.edge_attr)
+        # edge_index = SparseTensor.from_edge_index(orig_edge_index, edge_attr=(2 * g.edge_attr))
+        edge_index = orig_edge_index
 
         x = self.pre(x)
         emb = x
@@ -74,6 +78,7 @@ class EmbedModel(torch.nn.Module):
         for i in range(self.n_layers):
             if self.conv == 'gcn':
                 x = self.convs[i](x, edge_index, g.edge_attr)
+                # x = self.convs[i](x, edge_index)
             else:
                 x = self.convs[i](x, edge_index)
             if i&1:
